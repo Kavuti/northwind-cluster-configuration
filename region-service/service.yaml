@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: region-service
+  namespace: northwind
+spec:
+  selector:
+    app: region-service
+  ports:
+    - port: 8000
+      targetPort: 8000

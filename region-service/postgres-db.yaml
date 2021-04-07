@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: region-service-db
+spec:
+  selector:
+    app: region-service-db
+  ports:
+  - port: 8001
+    targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: region-service-db
+spec:
+  selector:
+    matchLabels:
+      app: region-service-db
+  template:
+    metadata:
+      labels:
+        app: region-service-db
+    spec:
+      containers:
+      - name: region-service-db
+        image: postgres:13.1-alpine
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 5432

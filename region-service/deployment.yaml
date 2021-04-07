@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: region-service
+  namespace: northwind
+  labels:
+    app: region-service
+spec:
+  selector:
+    matchLabels:
+      app: region-service
+  template:
+    metadata:
+      labels:
+        app: region-service
+    spec:
+      containers:
+      - name: region-service-container
+        image: christiancavuti/region-service:0.1.0
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URI
+          valueFrom:
+            secretKeyRef:
+              name: region-service
+              key: database-uri
+        - name: DATABASE_USER
+          valueFrom:
+            secretKeyRef:
+              name: region-service
+              key: database-user
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: region-service
+              key: database-password
+        - name: LOGGING_DIR
+          valueFrom:
+            configMapKeyRef:
+              name: region-service
+              key: logging-dir
+        - name: FLASK_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: region-service
+              key: env
+        - name: TESTING
+          valueFrom:
+            configMapKeyRef:
+              name: region-service
+              key: testing
