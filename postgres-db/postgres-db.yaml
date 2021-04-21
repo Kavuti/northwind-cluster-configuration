@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: postgres-volume
+spec:
+  capacity:
+    storage: "1Gi"
+  hostPath:
+    path: "/home/.data/.postgres-db"
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-volume-claim
+spec:
+  volumeMode: Filesystem
+  resources:
+    requests: 
+      storage: "1Gi"
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-db
+spec:
+  selector:
+    matchLabels:
+      app: postgres-db
+  template:
+    metadata:
+      labels:
+        app: postgres-db
+    spec:
+      volumes:
+        - name: postgres-volume
+          persistentVolumeClaim:
+            claimName: postgres-volume-claim
+      containers:
+      - name: postgres-db
+        image: postgres:13.1-alpine
+        env:
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: postgres-db-secret
+                key: postgresUser
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: postgresPassword
+                name: postgres-db-secret
+          - name: POSTGRES_MULTIPLE_DATABASES
+            value: keycloak,region-service
+        volumeMounts:
+          - name: postgres-volume
+            mountPath: "/var/lib/postgresql/data"
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-db
+spec:
+  selector:
+    app: postgres-db
+  ports:
+  - port: 5432
+    targetPort: 5432

@@ -1,0 +1,38 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:13.1-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+    networks:
+      - keycloak-network
+  keycloak:
+    image: quay.io/keycloak/keycloak:12.0.4
+    container_name: keycloak_container
+    environment:
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: christiancavuti
+      PROXY_ADDRESS_FORWARDING: "true"
+      DB_VENDOR: POSTGRES
+      DB_ADDR: postgres
+      DB_DATABASE: keycloak
+      DB_USER: keycloak
+      DB_SCHEMA: public
+    ports:
+      - 8080:8080
+    networks:
+      - keycloak-network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+    keycloak-network:
+        driver: bridge
