@@ -2,14 +2,18 @@ apiVersion: v1
 kind: Service
 metadata:
   name: keycloak
-  namespace: keycloak
+  #namespace: keycloak
   labels:
     app: keycloak
 spec:
   ports:
-  - name: http
-    port: 8080
-    targetPort: 8080
+    - name: http
+      port: 8080
+      protocol: TCP
+    - name: https
+      port: 8443
+      protocol: TCP
+  type: ClusterIP
   selector:
     app: keycloak
 ---
@@ -17,11 +21,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: keycloak
-  namespace: keycloak
+  #namespace: keycloak
   labels:
     app: keycloak
 spec:
-  replicas: 3
+  replicas: 1
   strategy:
     type: Recreate
   selector:
@@ -37,8 +41,8 @@ spec:
         image: quay.io/keycloak/keycloak:12.0.4
         resources:
           limits:
-            cpu: "500m"
-            memory: "1G"
+            cpu: "2000m"
+            memory: "3G"
         env:
         - name: KEYCLOAK_USER
           valueFrom: 
@@ -52,60 +56,91 @@ spec:
               key: keycloakPassword
         - name: PROXY_ADDRESS_FORWARDING
           value: "true"
-        - name: DB_VENDOR
-          value: postgres
-        - name: DB_ADDR
-          value: postgres-db.default.svc.cluster.local
-        - name: DB_USER
-          valueFrom:
-            secretKeyRef:
-              name: keycloak-secret
-              key: keycloakDbUser
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: keycloak-secret
-              key: keycloakDbPassword
-        - name: DB_SCHEMA
-          value: public
-        - name: DB_DATABASE
-          value: keycloak
+        # - name: DB_VENDOR
+        #   value: postgres
+        # - name: DB_ADDR
+        #   value: postgres-db.default.svc.cluster.local
+        # - name: DB_USER
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: keycloak-secret
+        #       key: keycloakDbUser
+        # - name: DB_PASSWORD
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: keycloak-secret
+        #       key: keycloakDbPassword
+        # - name: DB_SCHEMA
+        #   value: public
+        # - name: DB_DATABASE
+        #   value: keycloak
         ports:
         - name: http
           containerPort: 8080
         - name: https
           containerPort: 8443
+        - name: management
+          containerPort: 9090
+        - name: jgroups-tcp
+          containerPort: 7600
+        - name: jgroups-tcp-fd
+          containerPort: 57600
+        - name: jgroups-udp
+          containerPort: 55200
+          protocol: UDP
+        - name: jgroups-udp-mc
+          containerPort: 45688
+          protocol: UDP
+        - name: jgroups-udp-fd
+          containerPort: 54200
+          protocol: UDP
+        - name: modcluster
+          containerPort: 23364
+        - name: modcluster-udp
+          containerPort: 23364
+          protocol: UDP
+        - name: txn-recovery-ev
+          containerPort: 4712
+        - name: txn-status-mgr
+          containerPort: 4713
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: keycloak-ingress
-  namespace: keycloak
+  #namespace: keycloak
   annotations:
     kubernetes.io/ingress.class: "nginx"
-    nginx.org/mergeable-ingress-type: "minion"
+    #nginx.org/mergeable-ingress-type: "minion"
   labels:
       name: keycloak-ingress
 spec:
   rules:
-  - host: localhost
+  - host: keycloak.localhost
     http:
       paths:
-      - pathType: Prefix
-        path: /keycloak
+      - path: /
+        pathType: Prefix
         backend:
           service:
             name: keycloak
             port: 
               number: 8080
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: keycloak-ingress-master
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
-    nginx.org/mergeable-ingress-type: "master"
-spec:
-  rules:
-  - host: localhost
+      - path: /auth
+        pathType: Prefix
+        backend:
+          service:
+            name: keycloak
+            port: 
+              number: 8080
+# ---
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: keycloak-ingress-master
+#   annotations:
+#     kubernetes.io/ingress.class: "nginx"
+#     nginx.org/mergeable-ingress-type: "master"
+# spec:
+#   rules:
+#   - host: localhost
