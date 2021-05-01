@@ -1,0 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: base-ingress
+  namespace: default
+  labels:
+    app: dashboard
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.org/mergeable-ingress-type: "master"
+spec:
+  rules:
+  - host: keycloak.localhost
+  - host: dashboard.localhost
