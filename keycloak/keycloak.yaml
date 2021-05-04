@@ -38,6 +38,7 @@ spec:
     spec:
       containers:
       - name: keycloak
+        args: ["-Xmx1024m"]
         image: quay.io/keycloak/keycloak:12.0.4
         resources:
           limits:
